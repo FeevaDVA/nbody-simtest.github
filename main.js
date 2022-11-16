@@ -1,7 +1,7 @@
 'use strict';
 (function(){
     const FrameDelayMillis = 10;
-    const BodyMass = 1;
+    const BodyMass = .01;
     const CentralMass = 10;
     const G = 0.5
     const BodyRadius = 1
@@ -12,67 +12,112 @@
 
     var sim
 
+   var Vector = function(x, y) {
+        this.x = x || 0;
+        this.y = y || 0;
+   };
+   Vector.prototype = {
+    constructor: Vector,
+    set: function (set) {
+        if (typeof set == "object"){
+            this.x = set.x;
+            this.y = set.y;
+        } else {
+            this.x = set;
+            this.y = set;
+        }
+        return this;
+    },
+    equals: function (v) {
+        return ((v.x === this.x) && (v.y === this.y));
+    },
+    clone: function () {
+        return new Vector(this.x, this.y);
+    },
+    mul: function (mul) {
+        if (typeof mul === "object") {
+            return new Vector(this.x * mul.x, this.y * mul.y);
+        } else {
+            return new Vector(this.x * mul, this.y * mul);
+        }
+    },
+    div: function (div) {
+        return new Vector(this.x / div, this.y / div);
+    },
+    add: function (add) {
+        if (typeof add === "object") {
+            return new Vector(this.x + add.x, this.y + add.y);
+        } else {
+            return new Vector(this.x + add, this.y + add);
+        }
+    },
+    sub: function (sub) {
+        if (typeof sub === "object") {
+            return new Vector(this.x - sub.x, this.y - sub.y);
+        } else {
+            return new Vector(this.x - sub, this.y - sub);
+        }
+    },
+    reverse: function () {
+        return this.mul(-1);
+    },
+    abs: function () {
+        return new Vector(Math.abs(this.x), Math.abs(this.y));
+    },
+    dot: function (v) {
+        return (this.x * v.x + this.y * v.y);
+    },
+    length: function () {
+        return Math.sqrt(this.dot(this));
+    },
+    lengthSq: function () {
+        return this.dot(this);
+    },
+    setLength: function (l) {
+        return this.normalize().mul(l);
+    },
+    lerp: function (v, s) {
+        return new Vector(this.x + (v.x - this.x) * s, this.y + (v.y - this.y) * s);
+    },
+    normalize: function () {
+        return this.div(this.length());
+    },
+    truncate: function (max) {
+        if (this.length() > max) {
+            return this.normalize().mul(max);
+        } else {
+            return this;
+        }
+    },
+    dist: function (v) {
+        return Math.sqrt(this.distSq(v));
+    },
+    distSq: function (v) {
+        var dx = this.x - v.x,
+            dy = this.y - v.y;
+        return dx * dx + dy * dy;
+    },
+    cross: function (v) {
+        return this.x * v.y - this.y * v.x;
+    }
+};
+   
+
     class Body{
         constructor(x, y, vX, vY, fX, fY, mass, color){
             
-            this.x = x;
-            this.y = y;
+            this.vec = new Vector(x, y);
             
-            this.vX = vX;
-            this.vY = vY;
+            this.fVec = new Vector(fX, fY);
 
-            this.fX = fX;
-            this.fY = fY;
+            this.vVec = new Vector(vX, vY);
 
             this.mass = mass;
 
             this.color = color;
         }
-
-        update(dT) {
-            this.x = this.x+this.vX * dT * 0.5;
-            this.y = this.y+this.vY * dT * 0.5;;
-        }
-
-        distance(OtherBody){
-            var dX = Math.abs(this.x - OtherBody.x);
-            var dY = Math.abs(this.y - OtherBody.y);
-            return dX*dY + dY*dY;
-        }
-
-        reset(){
-            this.fX = 0.0;
-            this.fY = 0.0;
-        }
-
-        addForce(OtherBody){
-            var d = this.distance(OtherBody);
-            var norm = Math.sqrt(100.0 + d);
-
-            var mag = G / (norm * norm * norm);
-
-            var dX = this.x - OtherBody.x;
-            var dY = this.y - OtherBody.y;
-
-            var temp = dX
-            var temp2 = dY;
-            console.log(temp)
-            this.fX = this.fX - temp*mag*OtherBody.mass;
-            this.fY = this.fY - temp2*mag*OtherBody.mass;
-
-            OtherBody.fX = OtherBody.fX + temp*mag*OtherBody.mass;
-            OtherBody.fY = OtherBody.fY + temp2*mag*OtherBody.mass;
-        }
-
-        addVelocity(dT){
-            this.vX = this.vX + this.fX * dT;
-            //console.log(this.vX)
-            this.vY = this.vY + this.fY * dT;
-            //console.log(this.vY)
-        }
-
         toString(){
-            return this.x + " " + this.y + " " + this.vX + " " + this.vY;
+            return this.vec + " " + this.fVec
         }
     }
 
@@ -86,37 +131,46 @@
             return b;
         }
 
-        update(dT){
-            
-            for(let i=0; i<this.bodyList.length; i++){
-                this.bodyList[i].update(dT);
-                //console.log(this.bodyList[i]);
-            }
+        addForce(){
+            for (var i = 0; i < this.bodyList.length; i++) {
+                var p = this.bodyList[i];
+                p.fVec.set(0);
+        
+                for (var j = 0; j < i; j++) {
+                    var OtherBody = this.bodyList[j]
 
-            for(let i=0; i<this.bodyList.length; i++){
-                this.bodyList[i].reset();
-                for(let j=0; j<this.bodyList.length; j++){
-                    if(j != i){
-                        this.bodyList[i].addForce(this.bodyList[j]);
-                    }
+                    var d = p.vec.sub(OtherBody.vec);
+                    var norm = Math.sqrt(100.0 + d.lengthSq());
+                    var mag = G / (norm * norm * norm);
+        
+                    p.fVec.set(p.fVec.sub(d.mul(mag * OtherBody.mass)));
+                    OtherBody.fVec.set(OtherBody.fVec.add(d.mul(mag * p.mass)));
+        
                 }
             }
+        }
 
-            for(let i=0; i<this.bodyList.length; i++){
-                //console.log(this.bodyList[i]);
-                this.bodyList[i].addVelocity(dT);
-                //console.log(this.bodyList[i]);
+        update(dT){
+            
+            for (var i1 = 0; i1 < this.bodyList.length; i1++) {
+                var p1 = this.bodyList[i1];
+                p1.vec.set(p1.vec.add(p1.vVec.mul(0.5 * dT)));
             }
-
-            for(let i=0; i<this.bodyList.length; i++){
-                this.bodyList[i].update(dT);
-                //console.log(this.bodyList[i]);
+            this.addForce()
+            for (var i2 = 0; i2 < this.bodyList.length; i2++) {
+                var p2 = this.bodyList[i2];
+                p2.vVec.set(p2.vVec.add(p2.fVec.mul(dT)));
+            }
+            for (var i3 = 0; i3 < this.bodyList.length; i3++) {
+                var p3 = this.bodyList[i3];
+                p3.vec.set(p3.vec.add(p3.vVec.mul(0.5 * dT)));
+                console.log(p3.vec.x + " " + p3.vec.y)
             }
         }
 
         start(){
-            var central = new Body(0, 0, 0, 0, 0, 0, 20, 'Red');
-            //var b = new Body(0, 0, 1, -1, 1, -1, BodyMass, 'Green');
+            var central = new Body(0, -25, 0, 0, 0, 0, 20, 'Red');
+            var b = new Body(0, 0, 1, -1, 1, -1, BodyMass, 'Green');
             this.addBody(central);
             //this.addBody(b);
         }
@@ -155,13 +209,13 @@
             if (b.color == 'Green'){
                 context.fillStyle ='#8f0';
                 context.beginPath();
-                context.arc(ScreenHor(b.x), ScreenVer(b.y), (BodyRadius*PPM), 0, 2*Math.PI, true);
+                context.arc(ScreenHor(b.vec.x), ScreenVer(b.vec.y), (BodyRadius*PPM), 0, 2*Math.PI, true);
                 context.fill();
                 context.stroke();
             } else {
                 context.fillStyle ='#f80';
                 context.beginPath();
-                context.arc(ScreenHor(b.x), ScreenVer(b.y), (CentralRadius*PPM), 0, 2*Math.PI, true);
+                context.arc(ScreenHor(b.vec.x), ScreenVer(b.vec.y), (CentralRadius*PPM), 0, 2*Math.PI, true);
                 context.fill();
                 context.stroke();
             }
@@ -182,7 +236,7 @@
         const ver = evt.pageY - canvas.offsetTop;
         const x = WorldX(hor);
         const y = WorldY(ver);
-        var b = new Body(x, y, 0, 0, 0, 0, 10, 'Green');
+        var b = new Body(x, y, 0, 0, 0, 0, BodyMass, 'Green');
         sim.addBody(b)
         console.log("sup");
     }
@@ -192,7 +246,7 @@
         const canvas = document.getElementById('SimCanvas');
         canvas.addEventListener('mousedown', OnMouseDown);
         console.log("bruhg");
-        //sim.start();
+        sim.start();
         AnimationFrame();
     }
 })();
