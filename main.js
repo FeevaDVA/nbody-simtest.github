@@ -233,8 +233,10 @@
     var y1;
     function OnMouseDown(evt) {
         const canvas = document.getElementById('SimCanvas');
-        x1 = evt.pageX - canvas.offsetLeft;
-        y1 = evt.pageY - canvas.offsetTop;
+        x = evt.pageX - canvas.offsetLeft;
+        y = evt.pageY - canvas.offsetTop;
+        x1 = WorldX(x)
+        y1 = WorldY(y)
         console.log("sup");
     }
 
@@ -244,12 +246,12 @@
         const canvas = document.getElementById('SimCanvas');
         x2 = evt.pageX - canvas.offsetLeft;
         y2 = evt.pageY - canvas.offsetTop;
-        const x = WorldX(x1)
-        const y = WorldY(y1)
+        const x = WorldX(x2)
+        const y = WorldY(y2)
         const v1 = new Vector(x1, y1)
-        const v2 = new Vector(x2, y2)
+        const v2 = new Vector(x, y)
         const dist = v1.dist(v2)
-        var b = new Body(x, y, dist*(x1 - x2), dist*(y1 - y2), 0, 0, BodyMass, 'Green');
+        var b = new Body(x1, y1, dist*(x1 - x2), dist*(y1 - y2), 0, 0, BodyMass, 'Green');
         sim.addBody(b)
     }
     
