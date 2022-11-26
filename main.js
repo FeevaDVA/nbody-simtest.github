@@ -229,22 +229,35 @@
         render(sim);
         window.setTimeout(AnimationFrame, FrameDelayMillis);
     }
-    
+    const x1 = 0;
+    const y1 = 0;
     function OnMouseDown(evt) {
         const canvas = document.getElementById('SimCanvas');
-        const hor = evt.pageX - canvas.offsetLeft;
-        const ver = evt.pageY - canvas.offsetTop;
-        const x = WorldX(hor);
-        const y = WorldY(ver);
-        var b = new Body(x, y, 0, 0, 0, 0, BodyMass, 'Green');
-        sim.addBody(b)
+        x1 = evt.pageX - canvas.offsetLeft;
+        y1 = evt.pageY - canvas.offsetTop;
         console.log("sup");
+    }
+
+    const x2 = 0;
+    const y2 = 0;
+    function OnMouseUp(evt) {
+        const canvas = document.getElementById('SimCanvas');
+        x2 = evt.pageX - canvas.offsetLeft;
+        y2 = evt.pageY - canvas.offsetTop;
+        const x = WorldX(x1)
+        const y = WorldY(y1)
+        const v1 = new Vector(x1, y1)
+        const v2 = new Vector(x2, y2)
+        const dist = v1.dist(v2)
+        var b = new Body(x, y, dist*(x1 - x2), dist*(y1 - y2), 0, 0, BodyMass, 'Green');
+        this.addBody(b)
     }
     
     window.onload = function() {
         sim = init();
         const canvas = document.getElementById('SimCanvas');
         canvas.addEventListener('mousedown', OnMouseDown);
+        canvas.addEventListener('mouseup', OnMouseUp);
         console.log("bruhg");
         sim.start();
         AnimationFrame();
