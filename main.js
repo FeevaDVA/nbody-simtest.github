@@ -250,7 +250,7 @@
         const v2 = new Vector(x2, y2)
         const dist = v1.dist(v2)
         var b = new Body(x, y, dist*(x1 - x2), dist*(y1 - y2), 0, 0, BodyMass, 'Green');
-        this.addBody(b)
+        sim.addBody(b)
     }
     
     window.onload = function() {
