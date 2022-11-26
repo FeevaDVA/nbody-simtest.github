@@ -251,7 +251,7 @@
         const v1 = new Vector(x1, y1)
         const v2 = new Vector(x, y)
         const dist = v1.dist(v2)
-        var b = new Body(x1, y1, dist*(x1 - x)*.05, dist*(y1 - y)*.05, 0, 0, BodyMass, 'Green');
+        var b = new Body(x1, y1, dist*(x1 - x)*.005, dist*(y1 - y)*.005, 0, 0, BodyMass, 'Green');
         sim.addBody(b)
     }
     
