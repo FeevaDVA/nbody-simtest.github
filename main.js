@@ -229,8 +229,8 @@
         render(sim);
         window.setTimeout(AnimationFrame, FrameDelayMillis);
     }
-    var x1 = 0;
-    var y1 = 0;
+    var x1;
+    var y1;
     function OnMouseDown(evt) {
         const canvas = document.getElementById('SimCanvas');
         x1 = evt.pageX - canvas.offsetLeft;
@@ -238,8 +238,8 @@
         console.log("sup");
     }
 
-    var x2 = 0;
-    var y2 = 0;
+    var x2;
+    var y2;
     function OnMouseUp(evt) {
         const canvas = document.getElementById('SimCanvas');
         x2 = evt.pageX - canvas.offsetLeft;
